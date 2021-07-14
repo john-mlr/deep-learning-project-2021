@@ -16,3 +16,4 @@ As a part of this larger goal, our focus has been two pronged:
 These aims are descirbed further, along with their results, in 2 notebooks:
 
 1. attention_eval.ipynb
+2. kmeans_analysis.ipynb
