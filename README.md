@@ -12,3 +12,7 @@ As a part of this larger goal, our focus has been two pronged:
 
 1. Train an attention based model to evaluate our embeddings.
 2. Use KMeans clustering to gain a deeper understanding of the information encoded by BYOL.
+
+These aims are descirbed further, along with their results, in 2 notebooks:
+
+1. attention_eval.ipynb
