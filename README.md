@@ -1,6 +1,8 @@
 # deep-learning-project-2021
 
-![A representative WSI](https://github.com/john-mlr/deep-learning-project-2021/blob/main/orig_at8_45505.png?raw=true)
+<p align="center">
+  <img src="https://github.com/john-mlr/deep-learning-project-2021/blob/main/orig_at8_45505.png" />
+</p>
 
 #### Background:
 Our deep learning project spawned from previous work Gabe and I have performed in an attempt to leverage modern techniques in deep learning (such as self-supervision and attention) into a cohesive model which can accurately predict Braak score.
