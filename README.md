@@ -1,5 +1,6 @@
 # deep-learning-project-2021
 
+## Classification and Latent Space Analysis of Self-supervised WSI Embeddings
 <p align="center">
   <img src="https://github.com/john-mlr/deep-learning-project-2021/blob/main/orig_at8_45505.png" />
 </p>
