@@ -19,7 +19,7 @@ from braak_attention import BRAAK_attention, EmbeddingsDataset, BRAAK_no_attenti
 
 
 def main(gpu, args):
-    # distribution stuff
+    # distribution setup
     rank = args.nr * args.gpus + gpu
     dist.init_process_group("nccl", rank=rank, world_size=args.world_size)
     print(f"Process on cuda:{rank} initialized", flush=True)
@@ -48,11 +48,12 @@ def main(gpu, args):
         print(f'Datasets created with {len(train_dataset)} training and {len(test_dataset)} testing subjects.', flush=True)
         print('Creating and distributing model...', flush=True)
 
+    # training constants
     LR = 1e-4 
     REG = 1e-5
 
     # Model creation and distibution to all GPUs
-    model = BRAAK_no_attention(L=2048, size='big', dropout=False, n_classes=5)
+    model = BRAAK_attention(L=2048, size='big', dropout=False, n_classes=5)
     model = model.cuda(gpu)
 
     if args.restart:
@@ -61,18 +62,21 @@ def main(gpu, args):
     optimizer = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=REG)
     criterion = coral_loss
 
+    # barrier all gpus before submission to training
     dist.barrier()
 
     if dist.get_rank() == 0:
         print('Model created, beginning training.')
 
-    best_val_rmse = 100 # just an impossibly high rmse
+    best_val_rmse = 100 # just an impossibly high rmse so the benchmarking can proceed
     training_data = {'train_loss' : [],
                      'train_rmse': [],
                      'train_acc': [],
                      'val_loss': [],
                      'val_rmse': [],
                      'val_acc': []}
+
+    # training loop
     for epoch in range(args.start, args.epochs):
         print(f"=========================   EPOCH: {epoch+1}   =========================" , flush=True)
         train_loss, elapsed, train_rmse, train_acc = train(train_loader,
@@ -102,6 +106,19 @@ def main(gpu, args):
 
 
 def train(loader, model, criterion, optim, gpu, args):
+    """ Attention training function. Expects a dataloader batch sizeof 1, given the
+        size differences between embeddings. Therefore, it will perform gradient
+        accumulation until it reaches the batch size specified in args before 
+        optimizing the computational graph. 
+    
+        Args:
+            loader (utils.DataLoader instance): Train set dataloader
+            model (nn.Module): Model to be trained
+            criterion (nn.Module): Loss function
+            optim (nn.Module): Optimization algorithm
+            gpu (int): global GPU rank for training (do not manually set, script will figure this out)
+            args (global argparse namespace): arguments for the training session
+    """
     model.train()
 
     start_t = time.perf_counter()
@@ -112,7 +129,7 @@ def train(loader, model, criterion, optim, gpu, args):
         feats = torch.squeeze(feats)
         feats = feats.cuda(gpu)
         levels = levels.cuda(gpu)
-        logits, _, Y_hat = model(feats)
+        logits, _, Y_hat, _ = model(feats)
         loss = criterion(logits.view(1, -1), levels.view(1, -1))
         epoch_loss += loss.item()
         loss /= args.batch_size
@@ -134,7 +151,18 @@ def train(loader, model, criterion, optim, gpu, args):
 
 
 def evaluate(loader, model, criterion, gpu, args):
-    model.train()
+    """ Attention testing function. Expects a dataloader batch sizeof 1, given the
+        size differences between embeddings. 
+    
+        Args:
+            loader (utils.DataLoader instance): Test set dataloader
+            model (nn.Module): Model to be evaluatied
+            criterion (nn.Module): Loss function
+            gpu (int): global GPU rank for training (do not manually set, script will figure this out)
+            args (global argparse namespace): arguments for the training session
+    """
+
+    model.eval()
 
     start_t = time.perf_counter()
     epoch_loss = 0
@@ -145,7 +173,7 @@ def evaluate(loader, model, criterion, gpu, args):
             feats = torch.squeeze(feats)
             feats = feats.cuda(gpu)
             levels = levels.cuda(gpu)
-            logits, _, Y_hat = model(feats)
+            logits, _, Y_hat, _ = model(feats)
             loss = criterion(logits.view(1, -1), levels.view(1, -1))
             epoch_loss += loss
 
