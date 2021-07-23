@@ -26,7 +26,7 @@ These aims and their results are described further in 2 notebooks:
 To run with our specifications:
  - The data path in both python scripts must match a directory with slide embeddings. These are in the form of numpy arrays, where each file is a slide, and the embeddings are stored in an Nx2048 array, where N is the number of tiles in that slide.
 
-``` python train_test_attention.py -n 1 -g 1 -e 1000 -b 25 --split 0.75 --start 0 --dump_path <PATH to storage>
+``` python train_test_attention.py -n 1 -g 1 -e 1000 -b 25 --split 0.75 --start 0 --dump_path <PATH to storage> ```
 
 
 
